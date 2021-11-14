@@ -1,5 +1,6 @@
 import ApplicativeRouter
 import Foundation
+import Parsing
 import Prelude
 
 public enum TwitterRoute {
@@ -8,17 +9,22 @@ public enum TwitterRoute {
   case stephencelis
 }
 
-public let twitterRouter: Router<TwitterRoute> = [
-  .case(.mbrandonw)
-    <¢> get %> "mbrandonw" <% end,
+public let twitterRouter = OneOf {
+  Routing(/TwitterRoute.mbrandonw) {
+    Method.get
+    Path(FromUTF8View { "mbrandonw".utf8 })
+  }
 
-  .case(.pointfreeco)
-    <¢> get %> "pointfreeco" <% end,
+  Routing(/TwitterRoute.pointfreeco) {
+    Method.get
+    Path(FromUTF8View { "pointfreeco".utf8 })
+  }
 
-  .case(.stephencelis)
-    <¢> get %> "stephencelis" <% end,
-  ]
-  .reduce(.empty, <|>)
+  Routing(/TwitterRoute.stephencelis) {
+    Method.get
+    Path(FromUTF8View { "stephencelis".utf8 })
+  }
+}
 
 public func twitterUrl(to route: TwitterRoute) -> String {
   return twitterRouter.url(for: route, base: twitterBaseUrl)?.absoluteString ?? ""

@@ -45,6 +45,7 @@ var package = Package(
     .package(url: "https://github.com/pointfreeco/swift-tagged", from: "0.6.0"),
     .package(url: "https://github.com/pointfreeco/swift-web", .revision("8cbec70")),
     .package(url: "https://github.com/pointfreeco/xctest-dynamic-overlay", from: "0.2.0"),
+    .package(url: "https://github.com/iampatbrown/swift-parsing", .branch("parser-printer"))
   ],
   targets: [
 
@@ -284,6 +285,7 @@ var package = Package(
         .product(name: "Prelude", package: "swift-prelude"),
         .product(name: "Tagged", package: "swift-tagged"),
         .product(name: "UrlFormEncoding", package: "swift-web"),
+        .product(name: "Parsing", package: "swift-parsing")
       ]
     ),
 
