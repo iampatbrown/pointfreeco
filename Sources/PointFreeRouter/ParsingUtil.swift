@@ -4,6 +4,7 @@ import Optics
 import Parsing
 import Prelude
 import Tagged
+import UrlFormEncoding
 
 extension Printer where Input == URLRequestData {
   public func request(for output: Output, base: URL? = nil) -> URLRequest? {
@@ -105,4 +106,131 @@ extension Router {
   init<P>(_ parserPrinter: P) where P: ParserPrinter, P.Input == URLRequestData, P.Output == A {
     self = PartialIso(parserPrinter) <¢> .empty
   }
+}
+
+
+public struct UrlForm<Value: Decodable>: Parser {
+  public let decoder: UrlFormDecoder
+
+  @inlinable
+  public init(
+    _ type: Value.Type,
+    decoder: UrlFormDecoder = .init()
+  ) {
+    self.decoder = decoder
+  }
+
+  @inlinable
+  public func parse(_ input: inout ArraySlice<UInt8>) -> Value? {
+    guard
+      let output = try? decoder.decode(Value.self, from: Data(input))
+    else { return nil }
+    input = []
+    return output
+  }
+}
+
+extension UrlForm: Printer where Value: Encodable {
+  @inlinable
+  @inline(__always)
+  public func print(_ output: Value) -> ArraySlice<UInt8>? {
+    return ArraySlice(urlFormEncode(value: output).utf8)
+  }
+}
+
+public struct FormField<ValueParser>: Parser
+  where
+  ValueParser: Parser,
+  ValueParser.Input == Substring
+  {
+    public let name: String
+    public let valueParser: ValueParser
+
+  @inlinable
+  public init(
+    _ name: String,
+    _ value: ValueParser
+  ) {
+    self.name = name
+    self.valueParser = value
+  }
+
+    @inlinable
+    public init(_ name: String) where ValueParser == Rest<Substring> {
+      self.init(name, Rest())
+    }
+
+  @inlinable
+    public func parse(_ input: inout ArraySlice<UInt8>) -> ValueParser.Output? {
+      return nil
+  }
+}
+
+extension FormField: Printer where ValueParser: Printer {
+  @inlinable
+  public func print(_ output: Output) -> ArraySlice<UInt8>? {
+    guard let value = self.valueParser.print(output) else { return nil }
+    return ArraySlice(value.utf8)
+  }
+}
+
+
+
+// TODO: Temp
+
+
+extension String {
+  static var fromBody: PartialConversion<ArraySlice<UInt8>, Self> {
+    .init(
+      apply: { String(decoding: $0, as: UTF8.self) },
+      unapply: { ArraySlice($0.utf8) }
+    )
+  }
+}
+
+extension PartialConversion where Input == String, Output == [(key: String, value: String?)] {
+  /// An isomorphism between strings and dictionaries using form encoded format.
+  public static var formEncodedFields: PartialConversion {
+    return .init(
+      apply: formEncodedStringToFields,
+      unapply: fieldsToFormEncodedString
+    )
+  }
+}
+
+private func first(key: String) -> PartialConversion<[(key: String, value: String?)], String> {
+  return PartialConversion<[(key: String, value: String?)], String>(
+    apply: { $0.first(where: { $0.key == key })?.value },
+    unapply: { [(key: key, value: $0)] }
+  )
+}
+
+private func formEncodedStringToFields(_ body: String) -> [(key: String, value: String?)] {
+  return parse(query: body)
+}
+
+private func fieldsToFormEncodedString(_ data: [(key: String, value: String?)]) -> String {
+  var urlComponents = URLComponents()
+  urlComponents.queryItems = data.map(URLQueryItem.init(name:value:))
+  return urlComponents.percentEncodedQuery ?? ""
+}
+
+public func parse(query: String) -> [(String, String?)] {
+  return pairs(query)
+}
+
+private func pairs(_ query: String, sort: Bool = false) -> [(String, String?)] {
+  let pairs = query
+    .split(separator: "&")
+    .map { (pairString: Substring) -> (name: String, value: String?) in
+      let pairArray = pairString.split(separator: "=", maxSplits: 1, omittingEmptySubsequences: false)
+        .compactMap(
+          String.init
+            >>> { $0.replacingOccurrences(of: "+", with: " ") }
+            >>> ^\.removingPercentEncoding
+        )
+      return (pairArray[0], pairArray.count == 2 ? pairArray[1] : nil)
+    }
+
+  return sort ? pairs.sorted { $0.name < $1.name } : pairs
 }

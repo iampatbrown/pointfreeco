@@ -57,4 +57,9 @@ let _router = OneOf {
     Path(FromUTF8View { "api".utf8 })
     _apiRouter
   }
+
+  Routing(/Route.account) {
+    Path(FromUTF8View { "account".utf8 })
+    _accountRouter
+  }
 }

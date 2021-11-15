@@ -1,4 +1,5 @@
 import PointFreeRouter
+import Models
 import CustomDump
 import XCTest
 
@@ -40,5 +41,25 @@ class ParserRouterTests: XCTestCase {
       router.request(for: route),
       request
     )
+  }
+
+
+  func testUpdateProfile() {
+    let profileData = ProfileData(
+      email: "blobby@blob.co",
+      extraInvoiceInfo: nil,
+      emailSettings: [:],
+      name: "Blobby McBlob"
+    )
+    let route = Route.account(.update(profileData))
+    let router = PointFreeRouter(router: .empty)
+    guard let request = router.request(for: route) else {
+        XCTFail("")
+        return
+    }
+
+    XCTAssertEqual("POST", request.httpMethod)
+    XCTAssertEqual("/account", request.url?.path)
+    XCTAssertEqual(route, router.match(request: request))
   }
 }

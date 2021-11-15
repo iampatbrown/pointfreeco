@@ -127,10 +127,62 @@ let _accountRouter = OneOf {
         Method.get
       }
 
-//      Routing(/Account.PaymentInfo.update) {
-//        Method.post
-//        Path(FromUTF8View { String.fromSubstringUTF8View.map(Stripe.Invoice.Id.fromRawValue) })
-//      }
+      // TODO: FormField("token", Optional.iso.some >>> opt(.tagged(.string)))
     }
+  }
+
+  Routing(/Account.rss) {
+    OneOf {
+      Method.get
+      Method("HEAD")
+    }
+    Path(FromUTF8View { "rss".utf8 })
+    Path(FromUTF8View { String.fromSubstringUTF8View.map(User.RssSalt.fromRawValue) })
+  }
+
+  Routing(/Account.rssLegacy) {
+    OneOf {
+      Method.get
+      Method("HEAD")
+    }
+    Path(FromUTF8View { "rss".utf8 })
+    Path(FromUTF8View { String.fromSubstringUTF8View })
+    Path(FromUTF8View { String.fromSubstringUTF8View })
+  }
+
+  Routing(/Account.subscription) {
+    Path(FromUTF8View { "subscription".utf8 })
+
+    OneOf {
+      Routing(/Account.Subscription.cancel) {
+        Method.post
+        Path(FromUTF8View { "cancel".utf8 })
+      }
+
+      Routing(/Account.Subscription.change) {
+        OneOf {
+          Routing(/Account.Subscription.Change.show) {
+            Method.get
+            Path(FromUTF8View { "change".utf8 })
+          }
+
+          Routing(/Account.Subscription.Change.update) {
+            Method.post
+            Path(FromUTF8View { "change".utf8 })
+            Body { UrlForm(Pricing?.self, decoder: formDecoder) }
+          }
+        }
+      }
+
+      Routing(/Account.Subscription.reactivate) {
+        Method.post
+        Path(FromUTF8View { "reactivate".utf8 })
+      }
+    }
+  }
+
+  Routing(/Account.update) {
+    Method.post
+    Body { UrlForm(ProfileData?.self, decoder: formDecoder) }
   }
 }
