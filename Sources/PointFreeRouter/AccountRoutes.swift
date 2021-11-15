@@ -1,6 +1,7 @@
 import ApplicativeRouter
 import Foundation
 import Models
+import Parsing
 import PointFreePrelude
 import Prelude
 import Stripe
@@ -91,3 +92,45 @@ private let accountRouters: [Router<Account>] = [
   .case(Account.update)
     <¢> post %> formBody(ProfileData?.self, decoder: formDecoder) <% end,
 ]
+
+let _accountRouter = OneOf {
+  Routing(/Account.confirmEmailChange) {
+    Method.get
+    Path(FromUTF8View { "confirm-email-change".utf8 })
+    Query("payload", FromUTF8View { String.fromSubstringUTF8View.map(Encrypted<String>.fromRawValue) })
+  }
+
+  Routing(/Account.index) {
+    Method.get
+  }
+
+  Routing(/Account.invoices) {
+    Path(FromUTF8View { "invoices".utf8 })
+
+    OneOf {
+      Routing(/Account.Invoices.index) {
+        Method.get
+      }
+
+      Routing(/Account.Invoices.show) {
+        Method.get
+        Path(FromUTF8View { String.fromSubstringUTF8View.map(Stripe.Invoice.Id.fromRawValue) })
+      }
+    }
+  }
+
+  Routing(/Account.paymentInfo) {
+    Path(FromUTF8View { "payment-info".utf8 })
+
+    OneOf {
+      Routing(/Account.PaymentInfo.show) {
+        Method.get
+      }
+
+//      Routing(/Account.PaymentInfo.update) {
+//        Method.post
+//        Path(FromUTF8View { String.fromSubstringUTF8View.map(Stripe.Invoice.Id.fromRawValue) })
+//      }
+    }
+  }
+}
