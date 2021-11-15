@@ -1,6 +1,8 @@
 import ApplicativeRouter
-import Prelude
 import Models
+import Parsing
+import Prelude
+import CasePaths
 
 extension Route {
   public enum Api: Equatable {
@@ -9,7 +11,7 @@ extension Route {
   }
 }
 
-let apiRouter
+ let apiRouter
   = apiRouters.reduce(.empty, <|>)
 
 private let apiRouters: [Router<Route.Api>] = [
@@ -17,5 +19,21 @@ private let apiRouters: [Router<Route.Api>] = [
     <¢> "episodes" <% end,
 
   .case(Route.Api.episode)
-    <¢> "episodes" %> pathParam(.tagged(.int)) <% end
+    <¢> "episodes" %> pathParam(.tagged(.int)) <% end,
 ]
+
+let _apiRouter = OneOf {
+  Routing(/Route.Api.episodes) {
+    Method.get
+    Path(FromUTF8View { "episodes".utf8 })
+  }
+
+  Routing(/Route.Api.episode) {
+    Method.get
+    Path(FromUTF8View { "episodes".utf8 })
+    Path(FromUTF8View { Int.parser().map(Episode.Id.fromRawValue) })
+  }
+}
+
+
+

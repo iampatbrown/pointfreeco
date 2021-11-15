@@ -1,5 +1,6 @@
 import ApplicativeRouter
 import Foundation
+import Parsing
 #if canImport(FoundationNetworking)
 import FoundationNetworking
 #endif
@@ -19,19 +20,25 @@ public struct PointFreeRouter {
   }
 
   public func path(to route: Route) -> String {
-    return self.router.absoluteString(for: route) ?? "/"
+    return self.router.absoluteString(for: route)
+      ?? _router.absoluteString(for: route)
+      ?? "/"
   }
 
   public func url(to route: Route) -> String {
-    return self.router.url(for: route, base: self.baseUrl)?.absoluteString ?? ""
+    return self.router.url(for: route, base: self.baseUrl)?.absoluteString
+      ?? _router.url(for: route, base: self.baseUrl)?.absoluteString
+      ?? ""
   }
 
   public func request(for route: Route) -> URLRequest? {
     return self.router.request(for: route, base: self.baseUrl)
+      ?? _router.request(for: route, base: self.baseUrl)
   }
 
   public func match(request: URLRequest) -> Route? {
     return self.router.match(request: request)
+      ?? _router.match(request: request)
   }
 }
 
@@ -43,4 +50,11 @@ public func path(to route: Route) -> String {
 
 public func url(to route: Route) -> String {
   return pointFreeRouter.url(to: route)
+}
+
+let _router = OneOf {
+  Routing(/Route.api) {
+    Path(FromUTF8View { "api".utf8 })
+    _apiRouter
+  }
 }
