@@ -31,7 +31,7 @@ var package = Package(
     .library(name: "Styleguide", targets: ["Styleguide"]),
     .library(name: "Syndication", targets: ["Syndication"]),
     .library(name: "Views", targets: ["Views"]),
-    .library(name: "WebPreview", targets: ["WebPreview"])
+    .library(name: "WebPreview", targets: ["WebPreview"]),
   ],
   dependencies: [
     .package(url: "https://github.com/apple/swift-log.git", from: "1.0.0"),
@@ -45,10 +45,9 @@ var package = Package(
     .package(url: "https://github.com/pointfreeco/swift-tagged", from: "0.6.0"),
     .package(url: "https://github.com/pointfreeco/swift-web", .revision("8cbec70")),
     .package(url: "https://github.com/pointfreeco/xctest-dynamic-overlay", from: "0.2.0"),
-    .package(url: "https://github.com/iampatbrown/swift-parsing", .branch("parser-printer"))
+    .package(url: "https://github.com/iampatbrown/swift-parsing", .branch("parser-printer")),
   ],
   targets: [
-
     .systemLibrary(
       name: "Ccmark",
       pkgConfig: "libcmark",
@@ -116,7 +115,7 @@ var package = Package(
       dependencies: [
         .product(name: "Css", package: "swift-web"),
         .product(name: "Html", package: "swift-html"),
-        .product(name: "Prelude", package: "swift-prelude")
+        .product(name: "Prelude", package: "swift-prelude"),
       ]
     ),
 
@@ -285,7 +284,7 @@ var package = Package(
         .product(name: "Prelude", package: "swift-prelude"),
         .product(name: "Tagged", package: "swift-tagged"),
         .product(name: "UrlFormEncoding", package: "swift-web"),
-        .product(name: "Parsing", package: "swift-parsing")
+        .product(name: "Parsing", package: "swift-parsing"),
       ]
     ),
 
@@ -297,7 +296,7 @@ var package = Package(
         .product(name: "CustomDump", package: "swift-custom-dump"),
         .product(name: "Overture", package: "swift-overture"),
         .product(name: "SnapshotTesting", package: "SnapshotTesting"),
-        .product(name: "UrlFormEncoding", package: "swift-web")
+        .product(name: "UrlFormEncoding", package: "swift-web"),
       ]
     ),
 
@@ -415,7 +414,7 @@ var package = Package(
       name: "Syndication",
       dependencies: [
         "Models",
-        .product(name: "Html", package: "swift-html")
+        .product(name: "Html", package: "swift-html"),
       ]
     ),
 
@@ -439,7 +438,6 @@ var package = Package(
     .target(
       name: "WebPreview"
     ),
-
   ]
 )
 
@@ -456,8 +454,8 @@ let isOss = !FileManager.default.fileExists(
 extension SwiftSetting {
   static let warnLongExpressionTypeChecking = unsafeFlags(
     [
-      "-Xfrontend", "-warn-long-expression-type-checking=200",
-      "-Xfrontend", "-warn-long-function-bodies=200",
+      "-Xfrontend", "-warn-long-expression-type-checking=10",
+      "-Xfrontend", "-warn-long-function-bodies=10",
     ],
     .when(configuration: .debug)
   )

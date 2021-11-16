@@ -41,7 +41,7 @@ public enum Account: Equatable {
 let accountRouter
   = accountRouters.reduce(.empty, <|>)
 
-private let accountRouters: [Router<Account>] = [
+private let accountRouters: [ApplicativeRouter.Router<Account>] = [
   .case(Account.confirmEmailChange)
     <¢> get %> "confirm-email-change"
     %> queryParam("payload", .tagged)
@@ -93,10 +93,11 @@ private let accountRouters: [Router<Account>] = [
     <¢> post %> formBody(ProfileData?.self, decoder: formDecoder) <% end,
 ]
 
-let _accountRouter = OneOf {
+let __accountRouter = OneOf {
   Routing(/Account.confirmEmailChange) {
     Method.get
     Path(FromUTF8View { "confirm-email-change".utf8 })
+    // NB: I'm mainly using PartialConversions to allow printing. Will revisit the ergonomics later.
     Query("payload", FromUTF8View { String.fromSubstringUTF8View.map(Encrypted<String>.fromRawValue) })
   }
 
@@ -127,7 +128,19 @@ let _accountRouter = OneOf {
         Method.get
       }
 
-      // TODO: FormField("token", Optional.iso.some >>> opt(.tagged(.string)))
+      Routing(/Account.PaymentInfo.update) {
+        Method.post
+        Body {
+          // Maybe just FormField("token", valueParser)
+          Form {
+            Field("token") {
+              Optionally { // TODO: Not sure if this is right
+                String.fromSubstring.map(Stripe.Token.Id.fromRawValue)
+              }
+            }
+          }
+        }
+      }
     }
   }
 
@@ -169,7 +182,7 @@ let _accountRouter = OneOf {
           Routing(/Account.Subscription.Change.update) {
             Method.post
             Path(FromUTF8View { "change".utf8 })
-            Body { UrlForm(Pricing?.self, decoder: formDecoder) }
+            Body { FormData(Pricing?.self, decoder: formDecoder) }
           }
         }
       }
@@ -183,6 +196,113 @@ let _accountRouter = OneOf {
 
   Routing(/Account.update) {
     Method.post
-    Body { UrlForm(ProfileData?.self, decoder: formDecoder) }
+    Body { FormData(ProfileData?.self, decoder: formDecoder) }
+  }
+}
+
+let _accountRouter = _Router<Account> {
+  _Routing(/Account.confirmEmailChange) {
+    Method.get
+    Path(StartsWith("confirm-email-change"))
+    // NB: I'm mainly using PartialConversions to allow printing. Will revisit the ergonomics later.
+    Query("payload", String.fromSubstring.map(Encrypted<String>.fromRawValue))
+  }
+
+  _Routing(/Account.index) {
+    Method.get
+  }
+
+  _Routing(/Account.invoices) {
+    Path(StartsWith("invoices"))
+
+    _Router<Account.Invoices> {
+      _Routing(/Account.Invoices.index) {
+        Method.get
+      }
+
+      _Routing(/Account.Invoices.show) {
+        Method.get
+        Path(String.fromSubstring.map(Stripe.Invoice.Id.fromRawValue))
+      }
+    }
+  }
+
+  _Routing(/Account.paymentInfo) {
+    Path(StartsWith("payment-info"))
+
+    _Router<Account.PaymentInfo> {
+      _Routing(/Account.PaymentInfo.show) {
+        Method.get
+      }
+
+      _Routing(/Account.PaymentInfo.update) {
+        Method.post
+        Body {
+          // Maybe just FormField("token", valueParser)
+          Form {
+            Field("token") {
+              Optionally { // TODO: Not sure if this is right
+                String.fromSubstring.map(Stripe.Token.Id.fromRawValue)
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  _Routing(/Account.rss) {
+    OneOf {
+      Method.get
+      Method("HEAD")
+    }
+    Path(StartsWith("rss"))
+    Path(String.fromSubstring.map(User.RssSalt.fromRawValue))
+  }
+
+  _Routing(/Account.rssLegacy) {
+    OneOf {
+      Method.get
+      Method("HEAD")
+    }
+    Path(StartsWith("rss"))
+    Path(String.fromSubstring)
+    Path(String.fromSubstring)
+  }
+
+  _Routing(/Account.subscription) {
+    Path(StartsWith("subscription"))
+
+    _Router<Account.Subscription> {
+      _Routing<Account.Subscription>(/Account.Subscription.cancel) {
+        Method.post
+        Path(StartsWith("cancel"))
+      }
+
+      _Routing(/Account.Subscription.change) {
+        _Router<Account.Subscription.Change> {
+          _Routing(/Account.Subscription.Change.show) {
+            Method.get
+            Path(StartsWith("change"))
+          }
+
+          _Routing(/Account.Subscription.Change.update) {
+            Method.post
+            Path(StartsWith("change"))
+            Body { FormData(Pricing?.self, decoder: formDecoder) }
+          }
+        }
+      }
+
+      _Routing(/Account.Subscription.reactivate) {
+        Method.post
+        Path(StartsWith("reactivate"))
+      }
+    }
+  }
+
+  _Routing<Account>(/Account.update) {
+    Method.post
+    Body { FormData(ProfileData?.self, decoder: formDecoder) }
   }
 }

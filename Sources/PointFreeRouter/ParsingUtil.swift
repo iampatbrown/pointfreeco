@@ -102,14 +102,7 @@ extension PartialIso {
   }
 }
 
-extension Router {
-  init<P>(_ parserPrinter: P) where P: ParserPrinter, P.Input == URLRequestData, P.Output == A {
-    self = PartialIso(parserPrinter) <¢> .empty
-  }
-}
-
-
-public struct UrlForm<Value: Decodable>: Parser {
+public struct FormData<Value: Decodable>: Parser {
   public let decoder: UrlFormDecoder
 
   @inlinable
@@ -130,7 +123,7 @@ public struct UrlForm<Value: Decodable>: Parser {
   }
 }
 
-extension UrlForm: Printer where Value: Encodable {
+extension FormData: Printer where Value: Encodable {
   @inlinable
   @inline(__always)
   public func print(_ output: Value) -> ArraySlice<UInt8>? {
@@ -138,99 +131,92 @@ extension UrlForm: Printer where Value: Encodable {
   }
 }
 
-public struct FormField<ValueParser>: Parser
+public struct Form<FormParser>: Parser
+  where
+  FormParser: Parser,
+  FormParser.Input == [String: String?] // TODO: should this be an array? [(key: String, value: String?)]
+{
+  public let formParser: FormParser
+
+  @inlinable
+  public init(@ParserBuilder _ formParser: () -> FormParser) {
+    self.formParser = formParser()
+  }
+
+  @inlinable
+  public func parse(_ input: inout ArraySlice<UInt8>) -> FormParser.Output? {
+    var form = bodyToForm(input)
+    guard
+      let output = self.formParser.parse(&form),
+      form.isEmpty
+    else { return nil }
+    input = []
+    return output
+  }
+
+  @usableFromInline
+  func bodyToForm(_ input: ArraySlice<UInt8>) -> [String: String?] {
+    let formFields = UrlFormEncoding.parse(query: String(decoding: input, as: UTF8.self))
+    return .init(uniqueKeysWithValues: formFields)
+  }
+}
+
+extension Form: Printer where FormParser: Printer {
+  @inlinable
+  public func print(_ output: FormParser.Output) -> ArraySlice<UInt8>? {
+    guard let form = self.formParser.print(output)
+    else { return nil }
+    return formToBody(form)
+  }
+
+  @usableFromInline
+  func formToBody(_ form: [String: String?]) -> ArraySlice<UInt8> {
+    var urlComponents = URLComponents()
+    urlComponents.queryItems = form.map(URLQueryItem.init(name:value:))
+    let encodedString = urlComponents.percentEncodedQuery ?? ""
+    return ArraySlice(encodedString.utf8)
+  }
+}
+
+public struct Field<ValueParser>: Parser
   where
   ValueParser: Parser,
   ValueParser.Input == Substring
-  {
-    public let name: String
-    public let valueParser: ValueParser
+{
+  public let name: String
+  public let valueParser: ValueParser
 
   @inlinable
   public init(
     _ name: String,
-    _ value: ValueParser
+    @ParserBuilder _ valueParser: () -> ValueParser
   ) {
     self.name = name
-    self.valueParser = value
+    self.valueParser = valueParser()
   }
-
-    @inlinable
-    public init(_ name: String) where ValueParser == Rest<Substring> {
-      self.init(name, Rest())
-    }
 
   @inlinable
-    public func parse(_ input: inout ArraySlice<UInt8>) -> ValueParser.Output? {
-      return nil
+  public func parse(_ input: inout [String: String?]) -> ValueParser.Output? {
+    guard
+      let wrapped = input[self.name],
+      var value = wrapped?[...],
+      let output = self.valueParser.parse(&value),
+      value.isEmpty
+    else { return nil }
+    input[self.name] = nil
+    return output
   }
 }
 
-extension FormField: Printer where ValueParser: Printer {
+extension Field: Printer where ValueParser: Printer {
   @inlinable
-  public func print(_ output: Output) -> ArraySlice<UInt8>? {
-    guard let value = self.valueParser.print(output) else { return nil }
-    return ArraySlice(value.utf8)
+  public func print(_ output: ValueParser.Output) -> [String: String?]? {
+    guard let value = self.valueParser.print(output).map(String.init) else { return nil }
+    return [self.name: value]
   }
 }
 
 
 
-// TODO: Temp
 
-
-extension String {
-  static var fromBody: PartialConversion<ArraySlice<UInt8>, Self> {
-    .init(
-      apply: { String(decoding: $0, as: UTF8.self) },
-      unapply: { ArraySlice($0.utf8) }
-    )
-  }
-}
-
-extension PartialConversion where Input == String, Output == [(key: String, value: String?)] {
-  /// An isomorphism between strings and dictionaries using form encoded format.
-  public static var formEncodedFields: PartialConversion {
-    return .init(
-      apply: formEncodedStringToFields,
-      unapply: fieldsToFormEncodedString
-    )
-  }
-}
-
-private func first(key: String) -> PartialConversion<[(key: String, value: String?)], String> {
-  return PartialConversion<[(key: String, value: String?)], String>(
-    apply: { $0.first(where: { $0.key == key })?.value },
-    unapply: { [(key: key, value: $0)] }
-  )
-}
-
-private func formEncodedStringToFields(_ body: String) -> [(key: String, value: String?)] {
-  return parse(query: body)
-}
-
-private func fieldsToFormEncodedString(_ data: [(key: String, value: String?)]) -> String {
-  var urlComponents = URLComponents()
-  urlComponents.queryItems = data.map(URLQueryItem.init(name:value:))
-  return urlComponents.percentEncodedQuery ?? ""
-}
-
-public func parse(query: String) -> [(String, String?)] {
-  return pairs(query)
-}
-
-private func pairs(_ query: String, sort: Bool = false) -> [(String, String?)] {
-  let pairs = query
-    .split(separator: "&")
-    .map { (pairString: Substring) -> (name: String, value: String?) in
-      let pairArray = pairString.split(separator: "=", maxSplits: 1, omittingEmptySubsequences: false)
-        .compactMap(
-          String.init
-            >>> { $0.replacingOccurrences(of: "+", with: " ") }
-            >>> ^\.removingPercentEncoding
-        )
-      return (pairArray[0], pairArray.count == 2 ? pairArray[1] : nil)
-    }
-
-  return sort ? pairs.sorted { $0.name < $1.name } : pairs
-}
+typealias __Router = Parsing.Router
