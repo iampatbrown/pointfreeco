@@ -7,14 +7,14 @@ import FoundationNetworking
 
 public struct PointFreeRouter {
   public let baseUrl: URL
-  public let router: ApplicativeRouter.Router<Route>
+  public let router: Router<Route>
 
   public init(baseUrl: URL = URL(string: "http://localhost:8080")!) {
     self.baseUrl = baseUrl
     self.router = routers.reduce(.empty, <|>)
   }
 
-  public init(baseUrl: URL = URL(string: "http://localhost:8080")!, router: ApplicativeRouter.Router<Route>) {
+  public init(baseUrl: URL = URL(string: "http://localhost:8080")!, router: Router<Route>) {
     self.baseUrl = baseUrl
     self.router = router
   }

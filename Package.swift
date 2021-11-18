@@ -454,8 +454,16 @@ let isOss = !FileManager.default.fileExists(
 extension SwiftSetting {
   static let warnLongExpressionTypeChecking = unsafeFlags(
     [
-      "-Xfrontend", "-warn-long-expression-type-checking=10",
-      "-Xfrontend", "-warn-long-function-bodies=10",
+      "-Xfrontend", "-warn-long-expression-type-checking=200",
+      "-Xfrontend", "-warn-long-function-bodies=200",
+    ],
+    .when(configuration: .debug)
+  )
+
+  static let warnOver1msExpressionTypeChecking = unsafeFlags(
+    [
+      "-Xfrontend", "-warn-long-expression-type-checking=1",
+      "-Xfrontend", "-warn-long-function-bodies=1",
     ],
     .when(configuration: .debug)
   )
@@ -471,4 +479,8 @@ for index in package.targets.indices {
   if package.targets[index].type != .system {
     package.targets[index].swiftSettings = .pointFreeSettings
   }
+}
+
+if let index = package.targets.firstIndex(where: { $0.name == "PointFreeRouter" }) {
+  package.targets[index].swiftSettings = [.warnOver1msExpressionTypeChecking]
 }

@@ -216,7 +216,91 @@ extension Field: Printer where ValueParser: Printer {
   }
 }
 
+extension Conversion {
+  public static func >>> <NewOutput>(
+    lhs: Conversion<Input, Output>,
+    rhs: Conversion<Output, NewOutput>
+  ) -> Conversion<Input, NewOutput> {
+    return .init(
+      apply: lhs.apply >>> rhs.apply,
+      unapply: rhs.unapply >>> lhs.unapply
+    )
+  }
 
+  public static func <<< <NewOutput>(
+    lhs: Conversion<Output, NewOutput>,
+    rhs: Conversion<Input, Output>
+  ) -> Conversion<Input, NewOutput> {
+    return .init(
+      apply: rhs.apply >>> lhs.apply,
+      unapply: lhs.unapply >>> rhs.unapply
+    )
+  }
+}
 
+extension Conversion {
+  public static func >>> <NewOutput>(
+    lhs: Conversion<Input, Output>,
+    rhs: PartialConversion<Output, NewOutput>
+  ) -> PartialConversion<Input, NewOutput> {
+    return .init(
+      apply: lhs.apply >=> rhs.apply,
+      unapply: rhs.unapply >=> lhs.unapply
+    )
+  }
 
-typealias __Router = Parsing.Router
+  public static func <<< <NewOutput>(
+    lhs: Conversion<Output, NewOutput>,
+    rhs: PartialConversion<Input, Output>
+  ) -> PartialConversion<Input, NewOutput> {
+    return .init(
+      apply: rhs.apply >=> lhs.apply,
+      unapply: lhs.unapply >=> rhs.unapply
+    )
+  }
+}
+
+extension _Routing {
+  @inlinable
+  public init<Value, RouteParser>(
+    casePath route: CasePath<Route, Value>,
+    @ParserBuilder to parser: () -> RouteParser
+  )
+    where
+    RouteParser: ParserPrinter,
+    RouteParser.Input == URLRequestData,
+    RouteParser.Output == Value
+  {
+    self.init(route, to: parser)
+  }
+
+  @inlinable
+  public init<Value, RouteParser>(
+    closure route: @escaping (Value) -> Route,
+    @ParserBuilder to parser: () -> RouteParser
+  )
+    where
+    RouteParser: ParserPrinter,
+    RouteParser.Input == URLRequestData,
+    RouteParser.Output == Value
+  {
+    let c = CasePath.case(route) as CasePath<Route, Value>
+    self.init(c, to: parser)
+  }
+
+  @inlinable
+  public init<RouteParser>(
+    closure route: CasePath<Route, Void>,
+    @ParserBuilder to parser: () -> RouteParser
+  ) where
+    RouteParser: ParserPrinter,
+    RouteParser.Input == URLRequestData,
+    RouteParser.Output == Void
+  {
+    self.init(route, to: parser)
+  }
+}
+
+extension Parser where Self == Parsers.SubstringIntParser<Int> {
+  static var int: Self { .init(isSigned: true, radix: 10) }
+}

@@ -14,7 +14,7 @@ extension Route {
 let apiRouter
   = apiRouters.reduce(.empty, <|>)
 
-private let apiRouters: [ApplicativeRouter.Router<Route.Api>] = [
+private let apiRouters: [Router<Route.Api>] = [
   .case(.episodes)
     <¢> "episodes" <% end,
 
@@ -22,42 +22,15 @@ private let apiRouters: [ApplicativeRouter.Router<Route.Api>] = [
     <¢> "episodes" %> pathParam(.tagged(.int)) <% end,
 ]
 
-let __apiRouter = OneOf {
-  Routing(/Route.Api.episodes) {
-    Method.get
-    Path(FromUTF8View { "episodes".utf8 })
-  }
-
-  Routing(/Route.Api.episode) {
-    Method.get
-    Path(FromUTF8View { "episodes".utf8 })
-    Path(FromUTF8View { Int.parser().map(Episode.Id.fromRawValue) })
-  }
-}
-
-
-let ___apiRouter = OneOf {
-  Routing(/Route.Api.episodes) {
-    Method.get
-    Path(StartsWith("episodes"))
-  }
-
-  Routing(/Route.Api.episode) {
-    Method.get
-    Path(StartsWith("episodes"))
-    Path(Int.parser().map(Episode.Id.fromRawValue))
-  }
-}
-
 let _apiRouter = _Router<Route.Api> {
   _Routing(/Route.Api.episodes) {
     Method.get
-    Path(StartsWith("episodes"))
+    Path(literal: "episodes")
   }
 
   _Routing(/Route.Api.episode) {
     Method.get
-    Path(StartsWith("episodes"))
+    Path(literal: "episodes")
     Path(Int.parser().map(Episode.Id.fromRawValue))
   }
 }
