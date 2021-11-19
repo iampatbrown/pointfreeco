@@ -3,6 +3,8 @@ import CasePaths
 import Models
 import Parsing
 import Prelude
+import Routing
+import Tagged
 
 extension Route {
   public enum Api: Equatable {
@@ -22,15 +24,15 @@ private let apiRouters: [Router<Route.Api>] = [
     <¢> "episodes" %> pathParam(.tagged(.int)) <% end,
 ]
 
-let _apiRouter = _Router<Route.Api> {
-  _Routing(/Route.Api.episodes) {
+let _apiRouter = Routing<Route.Api> {
+  Routing(/Route.Api.episodes) {
     Method.get
-    Path(literal: "episodes")
+    Path("episodes")
   }
 
-  _Routing(/Route.Api.episode) {
+  Routing(/Route.Api.episode) {
     Method.get
-    Path(literal: "episodes")
-    Path(Int.parser().map(Episode.Id.fromRawValue))
+    Path("episodes")
+    Path { Int.parser().map(Episode.Id.fromRawValue) }
   }
 }

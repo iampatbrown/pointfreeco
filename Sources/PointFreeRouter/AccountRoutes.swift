@@ -1,9 +1,9 @@
 import ApplicativeRouter
 import Foundation
 import Models
-import Parsing
 import PointFreePrelude
 import Prelude
+import Routing
 import Stripe
 
 public enum Account: Equatable {
@@ -93,50 +93,47 @@ private let accountRouters: [Router<Account>] = [
     <¢> post %> formBody(ProfileData?.self, decoder: formDecoder) <% end,
 ]
 
-let _accountRouter = _Router<Account> {
-  _Routing(/Account.confirmEmailChange) {
+let _accountRouter = Routing<Account> {
+  Routing(/Account.confirmEmailChange) {
     Method.get
-    Path(literal: "confirm-email-change")
-    // NB: I'm mainly using PartialConversions to allow printing. Will revisit the ergonomics later.
-    Query("payload", String.fromSubstring >>> Encrypted<String>.fromRawValue)
+    Path("confirm-email-change")
+    Query("payload", String.fromSubstring.map(Encrypted<String>.fromRawValue))
   }
 
-  _Routing(/Account.index) {
+  Routing(/Account.index) {
     Method.get
   }
 
-  _Routing(/Account.invoices) {
-    Path(literal: "invoices")
+  Routing(/Account.invoices) {
+    Path("invoices")
 
-    _Router<Account.Invoices> {
-      _Routing(/Account.Invoices.index) {
+    Routing<Account.Invoices> {
+      Routing(/Account.Invoices.index) {
         Method.get
       }
 
-      _Routing(/Account.Invoices.show) {
+      Routing(/Account.Invoices.show) {
         Method.get
-        Path(String.fromSubstring >>> Stripe.Invoice.Id.fromRawValue)
+        Path { String.fromSubstring.map(Stripe.Invoice.Id.fromRawValue) }
       }
     }
   }
 
-  _Routing(/Account.paymentInfo) {
-    Path(literal: "payment-info")
+  Routing(/Account.paymentInfo) {
+    Path("payment-info")
 
-    _Router<Account.PaymentInfo> {
-      _Routing(/Account.PaymentInfo.show) {
+    Routing<Account.PaymentInfo> {
+      Routing(/Account.PaymentInfo.show) {
         Method.get
       }
 
-      _Routing(/Account.PaymentInfo.update) {
+      Routing(/Account.PaymentInfo.update) {
         Method.post
         Body {
-          // Maybe just FormField("token", valueParser)
-          Form {
-            Field("token") {
-              Optionally { // TODO: Not sure if this is right
-                String.fromSubstring >>> Stripe.Token.Id.fromRawValue
-              }
+          FormField("token") {
+            OneOf {
+              Unwrapped { Optionally { Stripe.Token.Id.fromRawValue } }
+              None<String, Stripe.Token.Id>()
             }
           }
         }
@@ -144,351 +141,60 @@ let _accountRouter = _Router<Account> {
     }
   }
 
-  _Routing(/Account.rss) {
+  Routing(/Account.rss) {
     OneOf {
       Method.get
       Method("HEAD")
     }
-    Path(literal: "rss")
-    Path(String.fromSubstring >>> User.RssSalt.fromRawValue)
+    Path("rss")
+    Path { String.fromSubstring.map(User.RssSalt.fromRawValue) }
   }
 
-  _Routing(/Account.rssLegacy) {
+  Routing(/Account.rssLegacy) {
     OneOf {
       Method.get
       Method("HEAD")
     }
-    Path(literal: "rss")
-    Path(String.fromSubstring)
-    Path(String.fromSubstring)
+    Path("rss")
+    Path {
+      String.fromSubstring
+      String.fromSubstring
+    }
   }
 
-  _Routing(/Account.subscription) {
-    Path(literal: "subscription")
+  Routing(/Account.subscription) {
+    Path("subscription")
 
-    _Router<Account.Subscription> {
-      _Routing<Account.Subscription>(/Account.Subscription.cancel) {
+    Routing<Account.Subscription> {
+      Routing<Account.Subscription>(/Account.Subscription.cancel) {
         Method.post
-        Path(literal: "cancel")
+        Path("cancel")
       }
 
-      _Routing(/Account.Subscription.change) {
-        _Router<Account.Subscription.Change> {
-          _Routing(/Account.Subscription.Change.show) {
+      Routing(/Account.Subscription.change) {
+        Routing<Account.Subscription.Change> {
+          Routing(/Account.Subscription.Change.show) {
             Method.get
-            Path(literal: "change")
+            Path("change")
           }
 
-          _Routing(/Account.Subscription.Change.update) {
+          Routing(/Account.Subscription.Change.update) {
             Method.post
-            Path(literal: "change")
-            Body { FormData(Pricing?.self, decoder: formDecoder) }
+            Path("change")
+            Body { FormEncoded(Pricing?.self, decoder: urlFormDecoder) }
           }
         }
       }
 
-      _Routing(/Account.Subscription.reactivate) {
+      Routing(/Account.Subscription.reactivate) {
         Method.post
-        Path(literal: "reactivate")
+        Path("reactivate")
       }
     }
   }
 
-  _Routing<Account>(/Account.update) {
+  Routing<Account>(/Account.update) {
     Method.post
-    Body { FormData(ProfileData?.self, decoder: formDecoder) }
+    Body { FormEncoded(ProfileData?.self, decoder: urlFormDecoder) }
   }
-}
-
-
-let __accountRouter = __Routing<Account> {
-  __Routing(/Account.confirmEmailChange) {
-    Method.get
-    Path(literal: "confirm-email-change")
-    // NB: I'm mainly using PartialConversions to allow printing. Will revisit the ergonomics later.
-    Query("payload", String.fromSubstring >>> Encrypted<String>.fromRawValue)
-  }
-
-  __Routing(/Account.index) {
-    Method.get
-  }
-
-  __Routing(/Account.invoices) {
-    Path(literal: "invoices")
-
-    __Routing<Account.Invoices> {
-      __Routing(/Account.Invoices.index) {
-        Method.get
-      }
-
-      __Routing(/Account.Invoices.show) {
-        Method.get
-        Path(String.fromSubstring >>> Stripe.Invoice.Id.fromRawValue)
-      }
-    }
-  }
-
-  __Routing(/Account.paymentInfo) {
-    Path(literal: "payment-info")
-
-    __Routing<Account.PaymentInfo> {
-      __Routing(/Account.PaymentInfo.show) {
-        Method.get
-      }
-
-      __Routing(/Account.PaymentInfo.update) {
-        Method.post
-        Body {
-          // Maybe just FormField("token", valueParser)
-          Form {
-            Field("token") {
-              Optionally { // TODO: Not sure if this is right
-                String.fromSubstring >>> Stripe.Token.Id.fromRawValue
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-
-  __Routing(/Account.rss) {
-    OneOf {
-      Method.get
-      Method("HEAD")
-    }
-    Path(literal: "rss")
-    Path(String.fromSubstring >>> User.RssSalt.fromRawValue)
-  }
-
-  __Routing(/Account.rssLegacy) {
-    OneOf {
-      Method.get
-      Method("HEAD")
-    }
-    Path(literal: "rss")
-    Path(String.fromSubstring)
-    Path(String.fromSubstring)
-  }
-
-  __Routing(/Account.subscription) {
-    Path(literal: "subscription")
-
-    __Routing<Account.Subscription> {
-      __Routing<Account.Subscription>(/Account.Subscription.cancel) {
-        Method.post
-        Path(literal: "cancel")
-      }
-
-      __Routing(/Account.Subscription.change) {
-        __Routing<Account.Subscription.Change> {
-          __Routing(/Account.Subscription.Change.show) {
-            Method.get
-            Path(literal: "change")
-          }
-
-          __Routing(/Account.Subscription.Change.update) {
-            Method.post
-            Path(literal: "change")
-            Body { FormData(Pricing?.self, decoder: formDecoder) }
-          }
-        }
-      }
-
-      __Routing(/Account.Subscription.reactivate) {
-        Method.post
-        Path(literal: "reactivate")
-      }
-    }
-  }
-
-  __Routing<Account>(/Account.update) {
-    Method.post
-    Body { FormData(ProfileData?.self, decoder: formDecoder) }
-  }
-}
-
-let accountConfirmEmailChangePath = /Account.confirmEmailChange
-let r0 = __Routing(accountConfirmEmailChangePath) {
-  Method.get
-  Path(literal: "confirm-email-change")
-  // NB: I'm mainly using PartialConversions to allow printing. Will revisit the ergonomics later.
-  Query("payload", String.fromSubstring >>> Encrypted<String>.fromRawValue)
-}
-
-let accountIndexPath = /Account.index
-let r1 = __Routing(accountIndexPath) {
-  Method.get
-}
-
-let r1Literal = __Routing(/Account.index) {
-  Method.get
-}
-
-let accountInvoicesPath = /Account.invoices // <1ms to type-check
-let accountInvoicesIndexPath = /Account.Invoices.index // <1ms to type-check
-let accountsInvoicesShowPath = /Account.Invoices.show // <1ms to type-check
-let r2 = __Routing(accountInvoicesPath) { // ~3ms to type-check
-  Path(literal: "invoices")
-  __Routing<Account.Invoices> {
-    __Routing(accountInvoicesIndexPath) { Method.get }
-    __Routing(accountsInvoicesShowPath) {
-      Method.get
-      Path(String.fromSubstring >>> Stripe.Invoice.Id.fromRawValue)
-    }
-  }
-}
-
-let r2literal = __Routing(/Account.invoices) { // ~17ms to type-check
-  Path(literal: "invoices")
-  __Routing<Account.Invoices> {
-    __Routing(/Account.Invoices.index) { Method.get }
-    __Routing(/Account.Invoices.show) {
-      Method.get
-      Path(String.fromSubstring >>> Stripe.Invoice.Id.fromRawValue)
-    }
-  }
-}
-
-let r2literal2 = __Routing(/Account.invoices) {
-  Path(literal: "invoices")
-
-  __Routing<Account.Invoices> {
-    __Routing((/Account.Invoices.index)) {
-      Method.get
-    }
-
-    __Routing((/Account.Invoices.show)) {
-      Method.get
-      Path(String.fromSubstring >>> Stripe.Invoice.Id.fromRawValue)
-    }
-  }
-}
-
-let r3literal = __Routing(/Account.invoices) {
-  Path(literal: "invoices")
-
-  __Routing<Account.Invoices> {
-    __Routing(/Account.Invoices.index) {
-      Method.get
-    }
-
-    __Routing(/Account.Invoices.show) {
-      Method.get
-      Path(String.fromSubstring >>> Stripe.Invoice.Id.fromRawValue)
-    }
-  }
-}
-
-let paymentInfoPath = /Account.paymentInfo
-let paymentInfoShowPath = /Account.PaymentInfo.show
-let paymentInfoUpdatePath = /Account.PaymentInfo.update
-let r3 = __Routing(paymentInfoPath) {
-  Path(literal: "payment-info")
-
-  __Routing<Account.PaymentInfo> {
-    __Routing(paymentInfoShowPath) {
-      Method.get
-    }
-
-    __Routing(paymentInfoUpdatePath) {
-      Method.post
-      Body {
-        // Maybe just FormField("token", valueParser)
-        Form {
-          Field("token") {
-            Optionally { // TODO: Not sure if this is right
-              String.fromSubstring >>> Stripe.Token.Id.fromRawValue
-            }
-          }
-        }
-      }
-    }
-  }
-}
-
-let rssPath = /Account.rss
-let r4 = __Routing(rssPath) {
-  OneOf {
-    Method.get
-    Method("HEAD")
-  }
-  Path(literal: "rss")
-  Path(String.fromSubstring >>> User.RssSalt.fromRawValue)
-}
-
-let rssLegacyPath = /Account.rssLegacy
-
-// let r5Path = __Routing(rssLegacyPath) {
-//  OneOf {
-//    Method.get
-//    Method("HEAD")
-//  }
-//  Path(literal: "rss")
-//  Path(String.fromSubstring)
-//  Path(String.fromSubstring)
-// }
-
-let rssLegacyPathCast = /Account.rssLegacy as CasePath<Account, (String, String)>
-let r5 = __Routing(rssLegacyPathCast) {
-  OneOf {
-    Method.get
-    Method("HEAD")
-  }
-  Path(literal: "rss")
-  Path(String.fromSubstring)
-  Path(String.fromSubstring)
-}
-
-let r5Literal = __Routing(/Account.rssLegacy) {
-  OneOf {
-    Method.get
-    Method("HEAD")
-  }
-  Path(literal: "rss")
-  Path(String.fromSubstring)
-  Path(String.fromSubstring)
-}
-
-let subscriptionPath = /Account.subscription
-let subscriptionCancelPath = /Account.Subscription.cancel
-let subscriptionChangePath = /Account.Subscription.change
-let subscriptionChangeShowPath = /Account.Subscription.Change.show
-let subscriptionChangeUpdatePath = /Account.Subscription.Change.update
-let subscriptionReactivatePath = /Account.Subscription.reactivate
-let r6 = __Routing(subscriptionPath) {
-  Path(literal: "subscription")
-
-  __Routing<Account.Subscription> {
-    __Routing<Account.Subscription>(subscriptionCancelPath) {
-      Method.post
-      Path(literal: "cancel")
-    }
-
-    __Routing(subscriptionChangePath) {
-      __Routing<Account.Subscription.Change> {
-        __Routing(subscriptionChangeShowPath) {
-          Method.get
-          Path(literal: "change")
-        }
-
-        __Routing(subscriptionChangeUpdatePath) {
-          Method.post
-          Path(literal: "change")
-          Body { FormData(Pricing?.self, decoder: formDecoder) }
-        }
-      }
-    }
-
-    __Routing(subscriptionReactivatePath) {
-      Method.post
-      Path(literal: "reactivate")
-    }
-  }
-}
-
-let accountUpdatePath = /Account.update
-let r7 = __Routing<Account>(accountUpdatePath) {
-  Method.post
-  Body { FormData(ProfileData?.self, decoder: formDecoder) }
 }

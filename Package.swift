@@ -284,6 +284,7 @@ var package = Package(
         .product(name: "Prelude", package: "swift-prelude"),
         .product(name: "Tagged", package: "swift-tagged"),
         .product(name: "UrlFormEncoding", package: "swift-web"),
+        .product(name: "Routing", package: "swift-parsing"),
         .product(name: "Parsing", package: "swift-parsing"),
       ]
     ),
@@ -481,6 +482,6 @@ for index in package.targets.indices {
   }
 }
 
-if let index = package.targets.firstIndex(where: { $0.name == "PointFreeRouter" }) {
-  package.targets[index].swiftSettings = [.warnOver1msExpressionTypeChecking]
-}
+// if let index = package.targets.firstIndex(where: { $0.name == "PointFreeRouter" }) {
+//  package.targets[index].swiftSettings = [.warnOver1msExpressionTypeChecking]
+// }

@@ -1,7 +1,7 @@
 import ApplicativeRouter
 import Foundation
-import Parsing
 import Prelude
+import Routing
 
 public enum TwitterRoute {
   case mbrandonw
@@ -9,20 +9,19 @@ public enum TwitterRoute {
   case stephencelis
 }
 
-public let twitterRouter = OneOf {
+public let twitterRouter = Routing<TwitterRoute> {
   Routing(/TwitterRoute.mbrandonw) {
-    Method.get
-    Path(FromUTF8View { "mbrandonw".utf8 })
+    Path("mbrandonw")
   }
 
   Routing(/TwitterRoute.pointfreeco) {
     Method.get
-    Path(FromUTF8View { "pointfreeco".utf8 })
+    Path("pointfreeco")
   }
 
   Routing(/TwitterRoute.stephencelis) {
     Method.get
-    Path(FromUTF8View { "stephencelis".utf8 })
+    Path("stephencelis")
   }
 }
 

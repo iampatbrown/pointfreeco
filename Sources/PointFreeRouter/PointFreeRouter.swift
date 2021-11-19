@@ -1,6 +1,6 @@
 import ApplicativeRouter
 import Foundation
-import Parsing
+import Routing
 #if canImport(FoundationNetworking)
 import FoundationNetworking
 #endif
@@ -52,9 +52,9 @@ public func url(to route: Route) -> String {
   return pointFreeRouter.url(to: route)
 }
 
-let _router = OneOf {
+let _router = Routing<Route> {
   Routing(/Route.api) {
-    Path(FromUTF8View { "api".utf8 })
+    Path("api")
     _apiRouter
   }
 //
