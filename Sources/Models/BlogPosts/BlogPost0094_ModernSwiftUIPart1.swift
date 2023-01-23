@@ -115,9 +115,6 @@ public let post0094_ModernSwiftUIPart1 = BlogPost(
         [swiftui-nav-gh]: http://github.com/pointfreeco/swiftui-navigation
         [dependencies-gh]: http://github.com/pointfreeco/swift-dependencies
         [standups-test-suite]: https://github.com/pointfreeco/swiftui-navigation/tree/5e97ce756293f941c2c336693283493a965458f6/Examples/Standups/StandupsTests
-        [runtime-warn-blog]: /blog/posts/70-unobtrusive-runtime-warnings-for-libraries
-        [xctest-dynamic-overlay]: http://github.com/pointfreeco/xctest-dynamic-overlay
-        [unimplemented-docs]: https://pointfreeco.github.io/xctest-dynamic-overlay/main/documentation/xctestdynamicoverlay/unimplemented(_:fileid:line:)-5098a
         """###,
       type: .paragraph
     ),
